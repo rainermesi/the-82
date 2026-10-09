@@ -25,7 +25,7 @@ export function MapPanel({
 }) {
   return (
     <div className="flex h-full min-h-[420px] flex-col gap-2">
-      <div className="relative min-h-[420px] flex-1 overflow-hidden rounded-xl border">
+      <div className="relative isolate z-0 min-h-[420px] flex-1 overflow-hidden rounded-xl border">
         <AlpsMap peaks={peaks} selectedId={selectedId} onSelect={onSelect} />
       </div>
       <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">

@@ -142,6 +142,8 @@
   width: 100%;
   background: #d5ddd0;
   font-family: inherit;
+  isolation: isolate;
+  z-index: 0;
 }
 
 .leaflet-tooltip {

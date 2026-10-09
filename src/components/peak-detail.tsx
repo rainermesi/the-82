@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, MapPin, Mountain, Tent } from "lucide-react";
+import { ExternalLink, MapPin, Mountain, Tent, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,135 @@ import { useProgress } from "./progress-provider";
 import { countryLabel, GradeBadge, SeasonBadge } from "./peak-meta";
 import { useState, type ReactNode } from "react";
 
+export function PeakInfo({
+  peak,
+  onClose,
+}: {
+  peak: Peak;
+  onClose: () => void;
+}) {
+  const { progress, isClimbed, markClimbed, markUnclimbed } = useProgress();
+  const [date, setDate] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const climbed = isClimbed(peak.id);
+  const ascent = progress[peak.id];
+  const hub = HUB_BY_ID[peak.hubId];
+  const combo = COMBO_BY_ID[peak.comboId];
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex items-start justify-between gap-3 p-4 pb-2">
+        <div className="min-w-0">
+          <h2 className="font-heading text-2xl leading-tight">{peak.name}</h2>
+          <p className="text-sm text-muted-foreground">
+            UIAA #{peak.rank} · {peak.elevation.toLocaleString("en")} m ·{" "}
+            {countryLabel(peak.countries)}
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onClose}
+          aria-label="Close peak details"
+        >
+          <X />
+        </Button>
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-8">
+        <div className="flex flex-wrap gap-2">
+          <SeasonBadge season={peak.season} />
+          <GradeBadge grade={peak.grade} />
+          <span className="self-center text-xs text-muted-foreground">
+            {peak.days} day{peak.days === 1 ? "" : "s"} from the valley
+          </span>
+        </div>
+
+        <p className="text-sm leading-relaxed">{peak.seasonWhy}</p>
+        <p className="text-sm leading-relaxed text-muted-foreground">{peak.notes}</p>
+
+        <div className="grid grid-cols-1 gap-3 text-sm">
+          <InfoRow icon={<MapPin className="size-4" />} label="Base">
+            {hub?.name} — sleep in {hub?.sleep}
+          </InfoRow>
+          <InfoRow icon={<Mountain className="size-4" />} label="Route">
+            {peak.normalRoute}
+          </InfoRow>
+          <InfoRow icon={<Tent className="size-4" />} label="Hut">
+            {peak.hut}
+          </InfoRow>
+          <InfoRow icon={<Mountain className="size-4" />} label="Same trip">
+            {combo?.name}. {combo?.blurb}
+          </InfoRow>
+        </div>
+
+        <Separator />
+
+        <div className="flex items-start gap-3">
+          <Checkbox
+            checked={climbed}
+            onCheckedChange={(checked) => {
+              if (checked) markClimbed(peak.id, date || undefined, notes || undefined);
+              else markUnclimbed(peak.id);
+            }}
+          />
+          <div className="flex-1 space-y-2">
+            <p className="text-sm font-medium">{climbed ? "Climbed" : "Mark as climbed"}</p>
+            {climbed && ascent?.climbedAt && (
+              <p className="text-xs text-muted-foreground">
+                Logged {ascent.climbedAt}
+                {ascent.notes ? ` — ${ascent.notes}` : ""}
+              </p>
+            )}
+            {!climbed && (
+              <div className="flex flex-col gap-2">
+                <Input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  aria-label="Ascent date"
+                />
+                <Input
+                  placeholder="Notes (conditions, partners…)"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <Separator />
+
+        <div>
+          <h3 className="font-heading mb-2 text-base">Supporting documents</h3>
+          <ul className="flex flex-col gap-1.5">
+            {peakLinks(peak).map((link) => (
+              <li key={link.url}>
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                >
+                  {link.label}
+                  <ExternalLink className="size-3.5" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <Button variant="outline" onClick={onClose}>
+          Close
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function PeakDetail({
   peak,
   onClose,
@@ -27,121 +156,23 @@ export function PeakDetail({
   peak: Peak | null;
   onClose: () => void;
 }) {
-  const { progress, isClimbed, markClimbed, markUnclimbed } = useProgress();
-  const [date, setDate] = useState("");
-  const [notes, setNotes] = useState("");
-
-  const climbed = peak ? isClimbed(peak.id) : false;
-  const ascent = peak ? progress[peak.id] : undefined;
-  const hub = peak ? HUB_BY_ID[peak.hubId] : undefined;
-  const combo = peak ? COMBO_BY_ID[peak.comboId] : undefined;
-
   return (
     <Sheet open={Boolean(peak)} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+      <SheetContent
+        side="right"
+        showCloseButton={false}
+        className="w-full overflow-hidden p-0 sm:max-w-md"
+      >
         {peak && (
           <>
-            <SheetHeader>
-              <SheetTitle className="font-heading text-2xl pr-8">
-                {peak.name}
-              </SheetTitle>
+            <SheetHeader className="sr-only">
+              <SheetTitle>{peak.name}</SheetTitle>
               <SheetDescription>
                 UIAA #{peak.rank} · {peak.elevation.toLocaleString("en")} m ·{" "}
                 {countryLabel(peak.countries)}
               </SheetDescription>
             </SheetHeader>
-            <div className="px-4 pb-8 flex flex-col gap-5">
-              <div className="flex flex-wrap gap-2">
-                <SeasonBadge season={peak.season} />
-                <GradeBadge grade={peak.grade} />
-                <span className="text-xs text-muted-foreground self-center">
-                  {peak.days} day{peak.days === 1 ? "" : "s"} from the valley
-                </span>
-              </div>
-
-              <p className="text-sm leading-relaxed">{peak.seasonWhy}</p>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                {peak.notes}
-              </p>
-
-              <div className="grid grid-cols-1 gap-3 text-sm">
-                <InfoRow icon={<MapPin className="size-4" />} label="Base">
-                  {hub?.name} — sleep in {hub?.sleep}
-                </InfoRow>
-                <InfoRow icon={<Mountain className="size-4" />} label="Route">
-                  {peak.normalRoute}
-                </InfoRow>
-                <InfoRow icon={<Tent className="size-4" />} label="Hut">
-                  {peak.hut}
-                </InfoRow>
-                <InfoRow icon={<Mountain className="size-4" />} label="Same trip">
-                  {combo?.name}. {combo?.blurb}
-                </InfoRow>
-              </div>
-
-              <Separator />
-
-              <div className="flex items-start gap-3">
-                <Checkbox
-                  checked={climbed}
-                  onCheckedChange={(checked) => {
-                    if (checked) markClimbed(peak.id, date || undefined, notes || undefined);
-                    else markUnclimbed(peak.id);
-                  }}
-                />
-                <div className="flex-1 space-y-2">
-                  <p className="text-sm font-medium">
-                    {climbed ? "Climbed" : "Mark as climbed"}
-                  </p>
-                  {climbed && ascent?.climbedAt && (
-                    <p className="text-xs text-muted-foreground">
-                      Logged {ascent.climbedAt}
-                      {ascent.notes ? ` — ${ascent.notes}` : ""}
-                    </p>
-                  )}
-                  {!climbed && (
-                    <div className="flex flex-col gap-2">
-                      <Input
-                        type="date"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        aria-label="Ascent date"
-                      />
-                      <Input
-                        placeholder="Notes (conditions, partners…)"
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h3 className="font-heading text-base mb-2">Supporting documents</h3>
-                <ul className="flex flex-col gap-1.5">
-                  {peakLinks(peak).map((link) => (
-                    <li key={link.url}>
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                      >
-                        {link.label}
-                        <ExternalLink className="size-3.5" />
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <Button variant="outline" onClick={onClose}>
-                Close
-              </Button>
-            </div>
+            <PeakInfo key={peak.id} peak={peak} onClose={onClose} />
           </>
         )}
       </SheetContent>

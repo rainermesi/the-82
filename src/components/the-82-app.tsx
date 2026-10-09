@@ -10,7 +10,7 @@ import { exportProgress, parseProgress } from "@/lib/progress";
 import { ClusterOverview } from "./cluster-overview";
 import { MapPanel } from "./map-panel";
 import { PeakCatalog } from "./peak-catalog";
-import { PeakDetail } from "./peak-detail";
+import { PeakDetail, PeakInfo } from "./peak-detail";
 import { ProgressProvider, useProgress } from "./progress-provider";
 import { SeasonGuide } from "./season-guide";
 import { TripPlanner } from "./trip-planner";
@@ -81,7 +81,7 @@ function AppInner() {
 
   return (
     <div className="min-h-dvh flex flex-col">
-      <header className="border-b bg-card/80 backdrop-blur sticky top-0 z-20">
+      <header className="sticky top-0 z-40 border-b bg-card/80 backdrop-blur">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -154,8 +154,19 @@ function AppInner() {
           <ClusterOverview onOpenHub={openHub} onPlan={() => setTab("plan")} />
         )}
         {tab === "map" && (
-          <div className="h-[calc(100dvh-12rem)] min-h-[480px]">
-            <MapPanel peaks={PEAKS} selectedId={selectedId} onSelect={openPeak} />
+          <div className="flex h-[calc(100dvh-12rem)] min-h-[480px] flex-col gap-3 lg:flex-row">
+            <div className="min-h-[280px] min-w-0 flex-1">
+              <MapPanel peaks={PEAKS} selectedId={selectedId} onSelect={openPeak} />
+            </div>
+            {selected && (
+              <aside className="relative z-10 h-[42%] min-h-[240px] overflow-hidden rounded-xl border bg-card shadow-sm lg:h-full lg:w-[24rem] lg:shrink-0">
+                <PeakInfo
+                  key={selected.id}
+                  peak={selected}
+                  onClose={() => setSelectedId(null)}
+                />
+              </aside>
+            )}
           </div>
         )}
         {tab === "peaks" && (
@@ -193,7 +204,9 @@ function AppInner() {
         </div>
       </footer>
 
-      <PeakDetail peak={selected} onClose={() => setSelectedId(null)} />
+      {tab !== "map" && (
+        <PeakDetail peak={selected} onClose={() => setSelectedId(null)} />
+      )}
     </div>
   );
 }
