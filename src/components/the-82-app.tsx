@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { Download, RotateCcw, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { PEAKS } from "@/data/peaks";
 import { GLOBAL_LINKS } from "@/lib/links";
@@ -27,9 +26,19 @@ export function The82App() {
   );
 }
 
+const TABS = [
+  { id: "overview", label: "Clusters" },
+  { id: "map", label: "Map" },
+  { id: "peaks", label: "Peaks" },
+  { id: "plan", label: "Yearly trips" },
+  { id: "seasons", label: "Winter vs summer" },
+] as const;
+
+type TabId = (typeof TABS)[number]["id"];
+
 function AppInner() {
   const { climbed, remaining, progress, replaceProgress, reset, ready } = useProgress();
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState<TabId>("overview");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hubFilter, setHubFilter] = useState<string | "all">("all");
 
@@ -111,15 +120,32 @@ function AppInner() {
               </Button>
             </div>
           </div>
-          <Tabs value={tab} onValueChange={setTab}>
-            <TabsList variant="line" className="w-full justify-start overflow-x-auto">
-              <TabsTrigger value="overview">Clusters</TabsTrigger>
-              <TabsTrigger value="map">Map</TabsTrigger>
-              <TabsTrigger value="peaks">Peaks</TabsTrigger>
-              <TabsTrigger value="plan">Yearly trips</TabsTrigger>
-              <TabsTrigger value="seasons">Winter vs summer</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <nav
+            aria-label="Sections"
+            className="flex w-full gap-1 overflow-x-auto border-b"
+          >
+            {TABS.map((item) => {
+              const active = tab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setTab(item.id)}
+                  aria-current={active ? "page" : undefined}
+                  className={`relative shrink-0 px-3 py-2 text-sm font-medium transition-colors ${
+                    active
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {item.label}
+                  {active && (
+                    <span className="absolute inset-x-2 bottom-0 h-0.5 bg-foreground" />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
         </div>
       </header>
 
