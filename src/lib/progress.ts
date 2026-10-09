@@ -31,6 +31,7 @@ export function parseProgress(raw: string): ProgressMap {
 }
 
 const listeners = new Set<() => void>();
+const EMPTY: ProgressMap = {};
 let cached: ProgressMap | null = null;
 
 function emit() {
@@ -49,7 +50,7 @@ export function getProgressSnapshot(): ProgressMap {
 }
 
 export function getServerProgressSnapshot(): ProgressMap {
-  return {};
+  return EMPTY;
 }
 
 export function writeProgress(next: ProgressMap) {
