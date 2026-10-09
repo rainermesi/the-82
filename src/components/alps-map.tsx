@@ -24,6 +24,15 @@ function FlyTo({ peak }: { peak: Peak | null }) {
   return null;
 }
 
+function InvalidateOnSelect({ selectedId }: { selectedId: string | null }) {
+  const map = useMap();
+  useEffect(() => {
+    const id = window.setTimeout(() => map.invalidateSize(), 60);
+    return () => window.clearTimeout(id);
+  }, [selectedId, map]);
+  return null;
+}
+
 function ZoomWatcher({ onZoom }: { onZoom: (z: number) => void }) {
   const map = useMap();
   useEffect(() => {
@@ -71,6 +80,7 @@ export function AlpsMap({
         url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
       />
       <ZoomWatcher onZoom={setZoom} />
+      <InvalidateOnSelect selectedId={selectedId} />
       <FlyTo peak={selected} />
 
       {showHubs &&
