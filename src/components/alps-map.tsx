@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { latLngBounds } from "leaflet";
 import {
   CircleMarker,
   MapContainer,
@@ -9,11 +10,47 @@ import {
   useMap,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { HUBS } from "@/data/hubs";
+import { HUB_BY_ID, HUBS } from "@/data/hubs";
 import { PEAKS } from "@/data/peaks";
 import type { Peak } from "@/data/types";
 import { useProgress } from "./progress-provider";
 import { SEASON_COLOR } from "./peak-meta";
+
+const ALPS_CENTER: [number, number] = [45.95, 7.4];
+const ALPS_ZOOM = 7;
+const CLUSTER_ZOOM = 11;
+
+function hubPeaks(peaks: Peak[], hubId: string) {
+  return peaks.filter((p) => p.hubId === hubId);
+}
+
+function viewForHub(peaks: Peak[], hubId: string | null) {
+  if (!hubId) return { center: ALPS_CENTER, zoom: ALPS_ZOOM };
+  const pts = hubPeaks(peaks, hubId);
+  const hub = HUB_BY_ID[hubId];
+  if (pts.length === 1) return { center: [pts[0].lat, pts[0].lon] as [number, number], zoom: 12 };
+  if (hub) return { center: [hub.lat, hub.lon] as [number, number], zoom: CLUSTER_ZOOM };
+  return { center: ALPS_CENTER, zoom: ALPS_ZOOM };
+}
+
+function fitMapToHub(map: ReturnType<typeof useMap>, peaks: Peak[], hubId: string | null) {
+  if (!hubId) {
+    map.flyTo(ALPS_CENTER, ALPS_ZOOM, { duration: 0.8 });
+    return;
+  }
+  const pts = hubPeaks(peaks, hubId);
+  if (pts.length >= 2) {
+    const bounds = latLngBounds(pts.map((p) => [p.lat, p.lon] as [number, number]));
+    map.fitBounds(bounds, { padding: [48, 48], maxZoom: 12, animate: true, duration: 0.8 });
+    return;
+  }
+  if (pts.length === 1) {
+    map.flyTo([pts[0].lat, pts[0].lon], 12, { duration: 0.8 });
+    return;
+  }
+  const hub = HUB_BY_ID[hubId];
+  if (hub) map.flyTo([hub.lat, hub.lon], CLUSTER_ZOOM, { duration: 0.8 });
+}
 
 function FlyTo({ peak }: { peak: Peak | null }) {
   const map = useMap();
@@ -21,6 +58,27 @@ function FlyTo({ peak }: { peak: Peak | null }) {
     if (!peak) return;
     map.flyTo([peak.lat, peak.lon], Math.max(map.getZoom(), 12), { duration: 0.8 });
   }, [peak, map]);
+  return null;
+}
+
+function FitToHub({
+  hubId,
+  requestId,
+  peaks,
+}: {
+  hubId: string | null;
+  requestId: number;
+  peaks: Peak[];
+}) {
+  const map = useMap();
+  useEffect(() => {
+    if (requestId === 0 && !hubId) return;
+    const id = window.setTimeout(() => {
+      map.invalidateSize();
+      fitMapToHub(map, peaks, hubId);
+    }, 80);
+    return () => window.clearTimeout(id);
+  }, [hubId, requestId, peaks, map]);
   return null;
 }
 
@@ -49,15 +107,22 @@ function ZoomWatcher({ onZoom }: { onZoom: (z: number) => void }) {
 export function AlpsMap({
   peaks,
   selectedId,
+  focusHubId,
+  focusRequestId,
   onSelect,
+  onFocusHub,
 }: {
   peaks: Peak[];
   selectedId: string | null;
+  focusHubId: string | null;
+  focusRequestId: number;
   onSelect: (id: string) => void;
+  onFocusHub: (hubId: string) => void;
 }) {
   const { isClimbed } = useProgress();
-  const [zoom, setZoom] = useState(7);
+  const [zoom, setZoom] = useState(focusHubId ? CLUSTER_ZOOM : ALPS_ZOOM);
   const selected = PEAKS.find((p) => p.id === selectedId) ?? null;
+  const start = viewForHub(peaks, focusHubId);
 
   const hubCounts = useMemo(() => {
     return HUBS.map((hub) => {
@@ -70,8 +135,8 @@ export function AlpsMap({
 
   return (
     <MapContainer
-      center={[45.95, 7.4]}
-      zoom={7}
+      center={start.center}
+      zoom={start.zoom}
       className="h-full w-full rounded-xl"
       scrollWheelZoom
     >
@@ -81,6 +146,7 @@ export function AlpsMap({
       />
       <ZoomWatcher onZoom={setZoom} />
       <InvalidateOnSelect selectedId={selectedId} />
+      <FitToHub hubId={focusHubId} requestId={focusRequestId} peaks={peaks} />
       <FlyTo peak={selected} />
 
       {showHubs &&
@@ -96,10 +162,7 @@ export function AlpsMap({
               weight: 2,
             }}
             eventHandlers={{
-              click: () => {
-                const first = peaks.find((p) => p.hubId === hub.id);
-                if (first) onSelect(first.id);
-              },
+              click: () => onFocusHub(hub.id),
             }}
           >
             <Tooltip direction="top" offset={[0, -8]} opacity={1}>

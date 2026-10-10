@@ -17,7 +17,19 @@ This is a planning aid, not a guidebook. Always check current conditions, hut bo
 
 ## View on the web
 
-Hosted on Github Pages @ [rainermesi.github.io/the-82/](https://rainermesi.github.io/the-82/)
+Once GitHub Actions is the Pages source, the app is at [rainermesi.github.io/the-82](https://rainermesi.github.io/the-82/).
+
+If that URL shows this README instead of the planner, Pages is still set to **Deploy from a branch** (Jekyll). Change it:
+
+1. Open [github.com/rainermesi/the-82/settings/pages](https://github.com/rainermesi/the-82/settings/pages)
+2. Under **Build and deployment → Source**, choose **GitHub Actions** (not “Deploy from a branch”)
+3. Push `main` so `.github/workflows/github-pages.yml` is on GitHub, then check [Actions](https://github.com/rainermesi/the-82/actions)
+
+```bash
+git remote add github https://github.com/rainermesi/the-82.git
+git pull github main --no-rebase
+git push github main
+```
 
 ## Run locally
 
@@ -37,24 +49,7 @@ npm start
 
 ## Deploy to GitHub Pages
 
-Yes. The app has no server — progress stays in the browser — so GitHub Pages can host the `out/` export.
-
-This repo’s default remote is Origin. Pages needs a **GitHub** repository:
-
-1. Create a GitHub repo (public, or private with GitHub Pro / Team / Enterprise).
-2. Push this project to it:
-
-```bash
-git remote add github https://github.com/<you>/<repo>.git
-git push -u github main
-```
-
-3. In the GitHub repo: **Settings → Pages → Source: GitHub Actions**.
-4. The workflow in `.github/workflows/github-pages.yml` builds on every push to `main` and publishes.
-
-The site URL is `https://<you>.github.io/<repo>/` for a project repo, or `https://<you>.github.io/` if the repo is named `<you>.github.io`.
-
-A project-pages URL includes the repo name as a path (`/the-82/…`). The workflow sets that automatically so CSS, JS, and the map still load.
+The planner is a static export (`out/`). GitHub Pages must build it with the **GitHub Actions** workflow in `.github/workflows/github-pages.yml`. “Deploy from a branch” only publishes Jekyll’s rendering of this README — that is not the app.
 
 ## Data
 
