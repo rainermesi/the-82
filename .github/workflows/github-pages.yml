@@ -24,13 +24,13 @@ jobs:
           node-version: 22
           cache: npm
       - name: Configure Pages
-        id: pages
         uses: actions/configure-pages@v5
       - name: Install
         run: npm ci
       - name: Build static site
         env:
-          NEXT_PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          # Project site: https://rainermesi.github.io/the-82/
+          NEXT_PUBLIC_BASE_PATH: /the-82
         run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
