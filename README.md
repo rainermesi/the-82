@@ -29,6 +29,29 @@ npm run build
 npm start
 ```
 
+`npm run build` writes a static site to `out/`. `npm start` serves that folder.
+
+## Deploy to GitHub Pages
+
+Yes. The app has no server — progress stays in the browser — so GitHub Pages can host the `out/` export.
+
+This repo’s default remote is Origin. Pages needs a **GitHub** repository:
+
+1. Create a GitHub repo (public, or private with GitHub Pro / Team / Enterprise).
+2. Push this project to it:
+
+```bash
+git remote add github https://github.com/<you>/<repo>.git
+git push -u github main
+```
+
+3. In the GitHub repo: **Settings → Pages → Source: GitHub Actions**.
+4. The workflow in `.github/workflows/github-pages.yml` builds on every push to `main` and publishes.
+
+The site URL is `https://<you>.github.io/<repo>/` for a project repo, or `https://<you>.github.io/` if the repo is named `<you>.github.io`.
+
+A project-pages URL includes the repo name as a path (`/the-82/…`). The workflow sets that automatically so CSS, JS, and the map still load.
+
 ## Data
 
 | Source | Used for |
