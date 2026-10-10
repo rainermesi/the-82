@@ -15,6 +15,10 @@ The list is the 1994 UIAA / Club Alpino Italiano classification — the one alpi
 
 This is a planning aid, not a guidebook. Always check current conditions, hut bookings, and a current topo before you go.
 
+## View on the web
+
+Hosted on Github Pages @ [rainermesi.github.io/the-82/](https://rainermesi.github.io/the-82/)
+
 ## Run locally
 
 ```bash
