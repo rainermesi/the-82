@@ -146,6 +146,11 @@
   z-index: 0;
 }
 
+.hut-marker {
+  background: transparent;
+  border: none;
+}
+
 .leaflet-tooltip {
   background: oklch(0.99 0.008 90);
   color: oklch(0.24 0.025 250);

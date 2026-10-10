@@ -66,6 +66,35 @@ export type Combo = {
   blurb: string;
 };
 
+export type HutKind = "hut" | "bivouac";
+
+export type Hut = {
+  id: string;
+  name: string;
+  altNames?: string;
+  elevation: number;
+  lat: number;
+  lon: number;
+  countries: Country[];
+  /** Valley the hut is approached from. */
+  hubId: string;
+  operator: string;
+  kind: HutKind;
+  beds?: number;
+  phone?: string;
+  website?: string;
+  booking?: string;
+  wikipedia?: string;
+  /**
+   * False when the building should not be planned as a bed
+   * (destroyed, or declared unusable by the operator).
+   */
+  usable?: boolean;
+  notes: string;
+  /** Phrases in a peak's hut field that mean this hut. Longest match wins. */
+  aliases: string[];
+};
+
 export type Ascent = {
   climbedAt?: string;
   notes?: string;

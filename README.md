@@ -7,10 +7,10 @@ The list is the 1994 UIAA / Club Alpino Italiano classification — the one alpi
 ## What it does
 
 - **Clusters** — nine logistics basins (Chamonix, Zermatt, Saas-Fee, Alagna, Combin, Jungfrau, Gran Paradiso, Écrins, Bernina), not 82 separate holidays.
-- **Map** — OpenTopoMap of every summit. Zoom out for valley clusters; zoom in for individual peaks, coloured by season.
+- **Map** — OpenTopoMap of every summit and the huts used to climb them. Zoom out for valley clusters; zoom in for peaks, coloured by season, and for hut markers with a detail view.
 - **Yearly trips** — given how many days you have and a max alpine grade, packs remaining peaks into ridge traverses (Nadelgrat, Breithorn, Monte Rosa, Trois Monts, …).
 - **Winter vs summer** — which 4000ers are classic spring ski tours, which are summer-only rock/mixed, and which work either way.
-- **Documents** — SummitPost (where a page exists), Wikipedia, Camptocamp search, Hikr, OpenStreetMap, SwissTopo / Géoportail.
+- **Documents** — SummitPost (where a page exists), Wikipedia, Camptocamp search, Hikr, OpenStreetMap, SwissTopo / Géoportail, plus hut homepages and booking pages.
 - **Progress** — mark peaks climbed. Stored in this browser only; export/import JSON if you want a backup.
 
 This is a planning aid, not a guidebook. Always check current conditions, hut bookings, and a current topo before you go.

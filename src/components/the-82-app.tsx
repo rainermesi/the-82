@@ -4,12 +4,14 @@ import { useMemo, useState } from "react";
 import { Download, RotateCcw, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { HUT_BY_ID } from "@/data/huts";
 import { PEAKS } from "@/data/peaks";
 import { GLOBAL_LINKS } from "@/lib/links";
 import { exportProgress, parseProgress } from "@/lib/progress";
 import { ClusterOverview } from "./cluster-overview";
 import { MapPanel } from "./map-panel";
 import { PeakCatalog } from "./peak-catalog";
+import { HutDetail, HutInfo } from "./hut-detail";
 import { PeakDetail, PeakInfo } from "./peak-detail";
 import { ProgressProvider, useProgress } from "./progress-provider";
 import { SeasonGuide } from "./season-guide";
@@ -40,6 +42,7 @@ function AppInner() {
   const { climbed, remaining, progress, replaceProgress, reset, ready } = useProgress();
   const [tab, setTab] = useState<TabId>("overview");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedHutId, setSelectedHutId] = useState<string | null>(null);
   const [hubFilter, setHubFilter] = useState<string | "all">("all");
   const [mapFocus, setMapFocus] = useState<{ hubId: string | null; n: number }>({
     hubId: null,
@@ -54,11 +57,20 @@ function AppInner() {
     () => PEAKS.find((p) => p.id === selectedId) ?? null,
     [selectedId],
   );
+  const selectedHut = selectedHutId ? (HUT_BY_ID[selectedHutId] ?? null) : null;
 
-  const openPeak = (id: string) => setSelectedId(id);
+  const openPeak = (id: string) => {
+    setSelectedId(id);
+    setSelectedHutId(null);
+  };
+  const openHut = (id: string, keepPeak = false) => {
+    setSelectedHutId(id);
+    if (!keepPeak) setSelectedId(null);
+  };
   const openHub = (hubId: string) => {
     setHubFilter(hubId);
     setSelectedId(null);
+    setSelectedHutId(null);
     focusHub(hubId);
     setTab("map");
   };
@@ -172,20 +184,36 @@ function AppInner() {
               <MapPanel
                 peaks={PEAKS}
                 selectedId={selectedId}
+                selectedHutId={selectedHutId}
                 focusHubId={mapFocus.hubId}
                 focusRequestId={mapFocus.n}
                 onSelect={openPeak}
+                onSelectHut={(id) => openHut(id)}
                 onFocusHub={focusHub}
                 onClearFocus={() => focusHub(null)}
               />
             </div>
-            {selected && (
+            {(selectedHut || selected) && (
               <aside className="relative z-10 h-[42%] min-h-[240px] overflow-hidden rounded-xl border bg-card shadow-sm lg:h-full lg:w-[24rem] lg:shrink-0">
-                <PeakInfo
-                  key={selected.id}
-                  peak={selected}
-                  onClose={() => setSelectedId(null)}
-                />
+                {selectedHut ? (
+                  <HutInfo
+                    key={selectedHut.id}
+                    hut={selectedHut}
+                    onClose={() => setSelectedHutId(null)}
+                    onOpenPeak={openPeak}
+                    onBack={selected ? () => setSelectedHutId(null) : undefined}
+                    backLabel={selected?.name}
+                  />
+                ) : (
+                  selected && (
+                    <PeakInfo
+                      key={selected.id}
+                      peak={selected}
+                      onClose={() => setSelectedId(null)}
+                      onOpenHut={(id) => openHut(id, true)}
+                    />
+                  )
+                )}
               </aside>
             )}
           </div>
@@ -225,8 +253,21 @@ function AppInner() {
         </div>
       </footer>
 
+      {tab !== "map" && !selectedHut && (
+        <PeakDetail
+          peak={selected}
+          onClose={() => setSelectedId(null)}
+          onOpenHut={(id) => openHut(id, true)}
+        />
+      )}
       {tab !== "map" && (
-        <PeakDetail peak={selected} onClose={() => setSelectedId(null)} />
+        <HutDetail
+          hut={selectedHut}
+          onClose={() => setSelectedHutId(null)}
+          onOpenPeak={openPeak}
+          onBack={selected ? () => setSelectedHutId(null) : undefined}
+          backLabel={selected?.name}
+        />
       )}
     </div>
   );
