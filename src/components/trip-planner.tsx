@@ -9,7 +9,7 @@ import { planLifetime, planTrips, type SeasonFilter } from "@/lib/planner";
 import { useProgress } from "./progress-provider";
 
 export function TripPlanner({ onSelectPeak }: { onSelectPeak: (id: string) => void }) {
-  const { progress } = useProgress();
+  const { progress, remaining } = useProgress();
   const [days, setDays] = useState(10);
   const [season, setSeason] = useState<SeasonFilter>("summer");
   const [maxGrade, setMaxGrade] = useState<AlpineGrade>("AD");
@@ -26,7 +26,16 @@ export function TripPlanner({ onSelectPeak }: { onSelectPeak: (id: string) => vo
     [progress, springDays, summerDays, maxGrade],
   );
 
-  const lifetimeTotal = lifetime.reduce((n, y) => n + y.peaks.length, 0);
+  const lifetimeTotal = useMemo(() => {
+    const ids = new Set<string>();
+    for (const year of lifetime) {
+      for (const peak of year.peaks) {
+        if (!progress[peak.id]) ids.add(peak.id);
+      }
+    }
+    return ids.size;
+  }, [lifetime, progress]);
+  const leftOut = Math.max(0, remaining - lifetimeTotal);
 
   return (
     <div className="flex flex-col gap-8">
@@ -176,11 +185,33 @@ export function TripPlanner({ onSelectPeak }: { onSelectPeak: (id: string) => vo
           ))}
         </div>
         <p className="text-sm">
-          This cadence knocks off <strong>{lifetimeTotal}</strong> remaining peaks
-          across <strong>{lifetime.length}</strong> years
-          {lifetimeTotal < 82 - Object.keys(progress).length
-            ? " — raise the grade cap or add days to finish the hard ridges."
-            : "."}
+          {remaining === 0 ? (
+            <>Every peak on the list is already logged.</>
+          ) : lifetimeTotal === 0 ? (
+            <>
+              <strong>{remaining}</strong>{" "}
+              {remaining === 1 ? "peak is" : "peaks are"} still unclimbed. None of
+              them fit this grade and these day counts — raise the grade cap or add
+              days.
+            </>
+          ) : leftOut === 0 ? (
+            <>
+              This cadence knocks off all <strong>{remaining}</strong> unclimbed{" "}
+              {remaining === 1 ? "peak" : "peaks"} across{" "}
+              <strong>{lifetime.length}</strong>{" "}
+              {lifetime.length === 1 ? "year" : "years"}.
+            </>
+          ) : (
+            <>
+              <strong>{remaining}</strong>{" "}
+              {remaining === 1 ? "peak is" : "peaks are"} still unclimbed. This
+              cadence knocks off <strong>{lifetimeTotal}</strong> of them across{" "}
+              <strong>{lifetime.length}</strong>{" "}
+              {lifetime.length === 1 ? "year" : "years"} — raise the grade cap or
+              add days to finish the other{" "}
+              <strong>{leftOut}</strong>.
+            </>
+          )}
         </p>
         <ol className="space-y-3">
           {lifetime.map((year) => (
