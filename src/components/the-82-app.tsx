@@ -41,6 +41,14 @@ function AppInner() {
   const [tab, setTab] = useState<TabId>("overview");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hubFilter, setHubFilter] = useState<string | "all">("all");
+  const [mapFocus, setMapFocus] = useState<{ hubId: string | null; n: number }>({
+    hubId: null,
+    n: 0,
+  });
+
+  const focusHub = (hubId: string | null) => {
+    setMapFocus((prev) => ({ hubId, n: prev.n + 1 }));
+  };
 
   const selected = useMemo(
     () => PEAKS.find((p) => p.id === selectedId) ?? null,
@@ -50,6 +58,8 @@ function AppInner() {
   const openPeak = (id: string) => setSelectedId(id);
   const openHub = (hubId: string) => {
     setHubFilter(hubId);
+    setSelectedId(null);
+    focusHub(hubId);
     setTab("map");
   };
 
@@ -130,7 +140,10 @@ function AppInner() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setTab(item.id)}
+                  onClick={() => {
+                    if (item.id === "map") focusHub(null);
+                    setTab(item.id);
+                  }}
                   aria-current={active ? "page" : undefined}
                   className={`relative shrink-0 px-3 py-2 text-sm font-medium transition-colors ${
                     active
@@ -156,7 +169,15 @@ function AppInner() {
         {tab === "map" && (
           <div className="flex h-[calc(100dvh-12rem)] min-h-[480px] flex-col gap-3 lg:flex-row">
             <div className="min-h-[280px] min-w-0 flex-1">
-              <MapPanel peaks={PEAKS} selectedId={selectedId} onSelect={openPeak} />
+              <MapPanel
+                peaks={PEAKS}
+                selectedId={selectedId}
+                focusHubId={mapFocus.hubId}
+                focusRequestId={mapFocus.n}
+                onSelect={openPeak}
+                onFocusHub={focusHub}
+                onClearFocus={() => focusHub(null)}
+              />
             </div>
             {selected && (
               <aside className="relative z-10 h-[42%] min-h-[240px] overflow-hidden rounded-xl border bg-card shadow-sm lg:h-full lg:w-[24rem] lg:shrink-0">
