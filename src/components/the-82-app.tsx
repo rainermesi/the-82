@@ -56,6 +56,11 @@ function AppInner() {
   );
 
   const openPeak = (id: string) => setSelectedId(id);
+  const showPeakOnMap = (id: string) => {
+    setSelectedId(id);
+    setMapFocus({ hubId: null, n: 0 });
+    setTab("map");
+  };
   const openHub = (hubId: string) => {
     setHubFilter(hubId);
     setSelectedId(null);
@@ -226,7 +231,11 @@ function AppInner() {
       </footer>
 
       {tab !== "map" && (
-        <PeakDetail peak={selected} onClose={() => setSelectedId(null)} />
+        <PeakDetail
+          peak={selected}
+          onClose={() => setSelectedId(null)}
+          onViewOnMap={selected ? () => showPeakOnMap(selected.id) : undefined}
+        />
       )}
     </div>
   );
