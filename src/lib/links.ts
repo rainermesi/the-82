@@ -1,4 +1,4 @@
-import type { Link, Peak } from "@/data/types";
+import type { Hut, Link, Peak } from "@/data/types";
 
 export function peakLinks(peak: Peak): Link[] {
   const q = encodeURIComponent(peak.name);
@@ -35,6 +35,42 @@ export function peakLinks(peak: Peak): Link[] {
     links.push({
       label: "Géoportail",
       url: `https://www.geoportail.gouv.fr/carte?c=${peak.lon},${peak.lat}&z=15`,
+    });
+  }
+
+  return links;
+}
+
+export function hutLinks(hut: Hut): Link[] {
+  const q = encodeURIComponent(hut.name);
+  const links: Link[] = [];
+
+  if (hut.website) links.push({ label: "Homepage", url: hut.website });
+  if (hut.booking && hut.booking !== hut.website) {
+    links.push({ label: "Booking", url: hut.booking });
+  }
+  if (hut.wikipedia) links.push({ label: "Wikipedia", url: hut.wikipedia });
+
+  links.push(
+    { label: "Camptocamp", url: `https://www.camptocamp.org/search?q=${q}` },
+    { label: "Hikr", url: `https://www.hikr.org/search.php?search_term=${q}` },
+    {
+      label: "OpenStreetMap",
+      url: `https://www.openstreetmap.org/?mlat=${hut.lat}&mlon=${hut.lon}#map=16/${hut.lat}/${hut.lon}`,
+    },
+  );
+
+  if (hut.countries.includes("CH")) {
+    links.push({
+      label: "SwissTopo",
+      url: `https://map.geo.admin.ch/#/map?lang=en&center=${hut.lon},${hut.lat}&z=11&bgLayer=ch.swisstopo.pixelkarte-farbe&crosshair=marker`,
+    });
+  }
+
+  if (hut.countries.includes("FR")) {
+    links.push({
+      label: "Géoportail",
+      url: `https://www.geoportail.gouv.fr/carte?c=${hut.lon},${hut.lat}&z=15`,
     });
   }
 

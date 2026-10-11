@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { COMBO_BY_ID } from "@/data/combos";
 import { HUB_BY_ID } from "@/data/hubs";
 import type { Peak } from "@/data/types";
+import { segmentHutLabel } from "@/lib/huts";
 import { peakLinks } from "@/lib/links";
 import { useProgress } from "./progress-provider";
 import { countryLabel, GradeBadge, SeasonBadge } from "./peak-meta";
@@ -23,10 +24,12 @@ import { useState, type ReactNode } from "react";
 export function PeakInfo({
   peak,
   onClose,
+  onOpenHut,
   onViewOnMap,
 }: {
   peak: Peak;
   onClose: () => void;
+  onOpenHut: (id: string) => void;
   onViewOnMap?: () => void;
 }) {
   const { progress, isClimbed, markClimbed, markUnclimbed } = useProgress();
@@ -86,7 +89,7 @@ export function PeakInfo({
             {peak.normalRoute}
           </InfoRow>
           <InfoRow icon={<Tent className="size-4" />} label="Hut">
-            {peak.hut}
+            <HutLabel label={peak.hut} onOpenHut={onOpenHut} />
           </InfoRow>
           <InfoRow icon={<Mountain className="size-4" />} label="Same trip">
             {combo?.name}. {combo?.blurb}
@@ -161,10 +164,12 @@ export function PeakInfo({
 export function PeakDetail({
   peak,
   onClose,
+  onOpenHut,
   onViewOnMap,
 }: {
   peak: Peak | null;
   onClose: () => void;
+  onOpenHut: (id: string) => void;
   onViewOnMap?: () => void;
 }) {
   return (
@@ -187,6 +192,7 @@ export function PeakDetail({
               key={peak.id}
               peak={peak}
               onClose={onClose}
+              onOpenHut={onOpenHut}
               onViewOnMap={onViewOnMap}
             />
           </>
@@ -196,7 +202,34 @@ export function PeakDetail({
   );
 }
 
-function InfoRow({
+export function HutLabel({
+  label,
+  onOpenHut,
+}: {
+  label: string;
+  onOpenHut: (id: string) => void;
+}) {
+  return (
+    <>
+      {segmentHutLabel(label).map((part, index) =>
+        part.hut ? (
+          <button
+            key={`${part.hut.id}-${index}`}
+            type="button"
+            onClick={() => onOpenHut(part.hut!.id)}
+            className="font-medium text-primary underline-offset-2 hover:underline"
+          >
+            {part.text}
+          </button>
+        ) : (
+          <span key={`text-${index}`}>{part.text}</span>
+        ),
+      )}
+    </>
+  );
+}
+
+export function InfoRow({
   icon,
   label,
   children,
@@ -210,7 +243,7 @@ function InfoRow({
       <div className="mt-0.5 text-muted-foreground">{icon}</div>
       <div>
         <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-        <p className="leading-relaxed">{children}</p>
+        <div className="leading-relaxed">{children}</div>
       </div>
     </div>
   );

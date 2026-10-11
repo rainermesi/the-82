@@ -1,18 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { latLngBounds } from "leaflet";
+import { divIcon, latLngBounds } from "leaflet";
 import {
   CircleMarker,
   MapContainer,
+  Marker,
   TileLayer,
   Tooltip,
   useMap,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import { HUT_CLOSED_COLOR, HUT_COLOR, HUTS } from "@/data/huts";
 import { HUB_BY_ID, HUBS } from "@/data/hubs";
 import { PEAKS } from "@/data/peaks";
 import type { Peak } from "@/data/types";
+import { hutsForHub, peaksForHut } from "@/lib/huts";
 import { useProgress } from "./progress-provider";
 import { SEASON_COLOR } from "./peak-meta";
 
@@ -39,26 +42,51 @@ function fitMapToHub(map: ReturnType<typeof useMap>, peaks: Peak[], hubId: strin
     return;
   }
   const pts = hubPeaks(peaks, hubId);
-  if (pts.length >= 2) {
-    const bounds = latLngBounds(pts.map((p) => [p.lat, p.lon] as [number, number]));
+  const huts = hutsForHub(hubId);
+  const coords = [
+    ...pts.map((p) => [p.lat, p.lon] as [number, number]),
+    ...huts.map((h) => [h.lat, h.lon] as [number, number]),
+  ];
+  if (coords.length >= 2) {
+    const bounds = latLngBounds(coords);
     map.fitBounds(bounds, { padding: [48, 48], maxZoom: 12, animate: true, duration: 0.8 });
     return;
   }
-  if (pts.length === 1) {
-    map.flyTo([pts[0].lat, pts[0].lon], 12, { duration: 0.8 });
+  if (coords.length === 1) {
+    map.flyTo(coords[0], 12, { duration: 0.8 });
     return;
   }
   const hub = HUB_BY_ID[hubId];
   if (hub) map.flyTo([hub.lat, hub.lon], CLUSTER_ZOOM, { duration: 0.8 });
 }
 
-function FlyTo({ peak }: { peak: Peak | null }) {
+function FlyTo({
+  lat,
+  lon,
+  token,
+}: {
+  lat: number | null;
+  lon: number | null;
+  token: string | null;
+}) {
   const map = useMap();
   useEffect(() => {
-    if (!peak) return;
-    map.flyTo([peak.lat, peak.lon], Math.max(map.getZoom(), 12), { duration: 0.8 });
-  }, [peak, map]);
+    if (lat == null || lon == null || !token) return;
+    map.flyTo([lat, lon], Math.max(map.getZoom(), 12), { duration: 0.8 });
+  }, [lat, lon, token, map]);
   return null;
+}
+
+function hutMarkerIcon(selected: boolean, usable: boolean) {
+  const size = selected ? 16 : 12;
+  const fill = usable ? HUT_COLOR : HUT_CLOSED_COLOR;
+  const border = selected ? "#111111" : "#f6f1ea";
+  return divIcon({
+    className: "hut-marker",
+    iconSize: [28, 28],
+    iconAnchor: [0, 0],
+    html: `<span style="display:block;width:28px;height:28px"><span style="display:block;width:${size}px;height:${size}px;margin-left:8px;margin-top:8px;background:${fill};border:2px solid ${border};transform:rotate(45deg);border-radius:1px"></span></span>`,
+  });
 }
 
 function FitToHub({
@@ -82,12 +110,12 @@ function FitToHub({
   return null;
 }
 
-function InvalidateOnSelect({ selectedId }: { selectedId: string | null }) {
+function InvalidateOnSelect({ token }: { token: string }) {
   const map = useMap();
   useEffect(() => {
     const id = window.setTimeout(() => map.invalidateSize(), 60);
     return () => window.clearTimeout(id);
-  }, [selectedId, map]);
+  }, [token, map]);
   return null;
 }
 
@@ -107,24 +135,49 @@ function ZoomWatcher({ onZoom }: { onZoom: (z: number) => void }) {
 export function AlpsMap({
   peaks,
   selectedId,
+  selectedHutId,
+  showHuts,
   focusHubId,
   focusRequestId,
   onSelect,
+  onSelectHut,
   onFocusHub,
 }: {
   peaks: Peak[];
   selectedId: string | null;
+  selectedHutId: string | null;
+  showHuts: boolean;
   focusHubId: string | null;
   focusRequestId: number;
   onSelect: (id: string) => void;
+  onSelectHut: (id: string) => void;
   onFocusHub: (hubId: string) => void;
 }) {
   const { isClimbed } = useProgress();
-  const [zoom, setZoom] = useState(selectedId ? 12 : focusHubId ? CLUSTER_ZOOM : ALPS_ZOOM);
+  const [zoom, setZoom] = useState(
+    selectedHutId || selectedId ? 12 : focusHubId ? CLUSTER_ZOOM : ALPS_ZOOM,
+  );
   const selected = PEAKS.find((p) => p.id === selectedId) ?? null;
-  const start = selected
-    ? { center: [selected.lat, selected.lon] as [number, number], zoom: 12 }
-    : viewForHub(peaks, focusHubId);
+  const selectedHut = HUTS.find((h) => h.id === selectedHutId) ?? null;
+  const hutIcons = useMemo(() => {
+    const icons = new Map<string, ReturnType<typeof divIcon>>();
+    for (const hut of HUTS) {
+      const usable = hut.usable !== false;
+      icons.set(`${hut.id}:0`, hutMarkerIcon(false, usable));
+      icons.set(`${hut.id}:1`, hutMarkerIcon(true, usable));
+    }
+    return icons;
+  }, []);
+  const fly = selectedHut
+    ? { lat: selectedHut.lat, lon: selectedHut.lon, token: `hut:${selectedHut.id}` }
+    : selected
+      ? { lat: selected.lat, lon: selected.lon, token: `peak:${selected.id}` }
+      : { lat: null, lon: null, token: null };
+  const start = selectedHut
+    ? { center: [selectedHut.lat, selectedHut.lon] as [number, number], zoom: 12 }
+    : selected
+      ? { center: [selected.lat, selected.lon] as [number, number], zoom: 12 }
+      : viewForHub(peaks, focusHubId);
 
   const hubCounts = useMemo(() => {
     return HUBS.map((hub) => {
@@ -147,9 +200,9 @@ export function AlpsMap({
         url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
       />
       <ZoomWatcher onZoom={setZoom} />
-      <InvalidateOnSelect selectedId={selectedId} />
+      <InvalidateOnSelect token={`${selectedId ?? ""}:${selectedHutId ?? ""}`} />
       <FitToHub hubId={focusHubId} requestId={focusRequestId} peaks={peaks} />
-      <FlyTo peak={selected} />
+      <FlyTo lat={fly.lat} lon={fly.lon} token={fly.token} />
 
       {showHubs &&
         hubCounts.map(({ hub, remaining, count }) => (
@@ -204,6 +257,36 @@ export function AlpsMap({
                 </div>
               </Tooltip>
             </CircleMarker>
+          );
+        })}
+
+      {showHuts &&
+        !showHubs &&
+        HUTS.map((hut) => {
+          const usable = hut.usable !== false;
+          const selectedMarker = hut.id === selectedHutId;
+          const served = peaksForHut(hut.id).length;
+          const icon = hutIcons.get(`${hut.id}:${selectedMarker ? 1 : 0}`);
+          if (!icon) return null;
+          return (
+            <Marker
+              key={hut.id}
+              position={[hut.lat, hut.lon]}
+              icon={icon}
+              zIndexOffset={selectedMarker ? 800 : 200}
+              eventHandlers={{ click: () => onSelectHut(hut.id) }}
+            >
+              <Tooltip direction="top" offset={[0, -8]} opacity={1}>
+                <div className="text-xs">
+                  <strong>{hut.name}</strong> {hut.elevation} m
+                  <div>
+                    {usable ? (hut.kind === "bivouac" ? "Bivouac" : "Hut") : "Not usable"}
+                    {hut.beds ? ` · ${hut.beds} beds` : ""}
+                    {served > 0 ? ` · ${served} summit${served === 1 ? "" : "s"}` : ""}
+                  </div>
+                </div>
+              </Tooltip>
+            </Marker>
           );
         })}
     </MapContainer>
