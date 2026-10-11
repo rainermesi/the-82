@@ -154,7 +154,9 @@ export function AlpsMap({
   onFocusHub: (hubId: string) => void;
 }) {
   const { isClimbed } = useProgress();
-  const [zoom, setZoom] = useState(focusHubId ? CLUSTER_ZOOM : ALPS_ZOOM);
+  const [zoom, setZoom] = useState(
+    selectedHutId || selectedId ? 12 : focusHubId ? CLUSTER_ZOOM : ALPS_ZOOM,
+  );
   const selected = PEAKS.find((p) => p.id === selectedId) ?? null;
   const selectedHut = HUTS.find((h) => h.id === selectedHutId) ?? null;
   const hutIcons = useMemo(() => {
@@ -171,7 +173,11 @@ export function AlpsMap({
     : selected
       ? { lat: selected.lat, lon: selected.lon, token: `peak:${selected.id}` }
       : { lat: null, lon: null, token: null };
-  const start = viewForHub(peaks, focusHubId);
+  const start = selectedHut
+    ? { center: [selectedHut.lat, selectedHut.lon] as [number, number], zoom: 12 }
+    : selected
+      ? { center: [selected.lat, selected.lon] as [number, number], zoom: 12 }
+      : viewForHub(peaks, focusHubId);
 
   const hubCounts = useMemo(() => {
     return HUBS.map((hub) => {

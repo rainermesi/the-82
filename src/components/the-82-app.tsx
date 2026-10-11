@@ -67,6 +67,12 @@ function AppInner() {
     setSelectedHutId(id);
     if (!keepPeak) setSelectedId(null);
   };
+  const showPeakOnMap = (id: string) => {
+    setSelectedId(id);
+    setSelectedHutId(null);
+    setMapFocus({ hubId: null, n: 0 });
+    setTab("map");
+  };
   const openHub = (hubId: string) => {
     setHubFilter(hubId);
     setSelectedId(null);
@@ -258,6 +264,7 @@ function AppInner() {
           peak={selected}
           onClose={() => setSelectedId(null)}
           onOpenHut={(id) => openHut(id, true)}
+          onViewOnMap={selected ? () => showPeakOnMap(selected.id) : undefined}
         />
       )}
       {tab !== "map" && (

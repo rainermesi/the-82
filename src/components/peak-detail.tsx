@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, MapPin, Mountain, Tent, X } from "lucide-react";
+import { ExternalLink, Map, MapPin, Mountain, Tent, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -25,10 +25,12 @@ export function PeakInfo({
   peak,
   onClose,
   onOpenHut,
+  onViewOnMap,
 }: {
   peak: Peak;
   onClose: () => void;
   onOpenHut: (id: string) => void;
+  onViewOnMap?: () => void;
 }) {
   const { progress, isClimbed, markClimbed, markUnclimbed } = useProgress();
   const [date, setDate] = useState("");
@@ -68,6 +70,13 @@ export function PeakInfo({
             {peak.days} day{peak.days === 1 ? "" : "s"} from the valley
           </span>
         </div>
+
+        {onViewOnMap && (
+          <Button type="button" variant="outline" onClick={onViewOnMap}>
+            <Map />
+            View on map
+          </Button>
+        )}
 
         <p className="text-sm leading-relaxed">{peak.seasonWhy}</p>
         <p className="text-sm leading-relaxed text-muted-foreground">{peak.notes}</p>
@@ -156,10 +165,12 @@ export function PeakDetail({
   peak,
   onClose,
   onOpenHut,
+  onViewOnMap,
 }: {
   peak: Peak | null;
   onClose: () => void;
   onOpenHut: (id: string) => void;
+  onViewOnMap?: () => void;
 }) {
   return (
     <Sheet open={Boolean(peak)} onOpenChange={(open) => !open && onClose()}>
@@ -177,7 +188,13 @@ export function PeakDetail({
                 {countryLabel(peak.countries)}
               </SheetDescription>
             </SheetHeader>
-            <PeakInfo key={peak.id} peak={peak} onClose={onClose} onOpenHut={onOpenHut} />
+            <PeakInfo
+              key={peak.id}
+              peak={peak}
+              onClose={onClose}
+              onOpenHut={onOpenHut}
+              onViewOnMap={onViewOnMap}
+            />
           </>
         )}
       </SheetContent>
